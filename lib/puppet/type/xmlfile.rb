@@ -179,6 +179,14 @@ Puppet::Type.newtype(:xmlfile) do
     end
   end
 
+  newparam(:use_existing_file) do
+    desc <<-'EOT'
+      Should a exising file in the filestystem be updated or should we start with a blank document? Defaults to false.
+    EOT
+    
+    defaultto false
+  end
+
   # Generates content
   def should_content # Ape the name from property::should
     return @should_content if @should_content # Only do this ONCE
@@ -190,6 +198,9 @@ Puppet::Type.newtype(:xmlfile) do
       content = self[:content]
     elsif ! self[:source].nil?
       content = Puppet::FileServing::Content.indirection.find(self[:source], :environment => catalog.environment).content
+    elsif self[:use_existing_file] && File.exist?(self[:path])
+      xmlFile = File.open(self[:path])
+      content = xmlFile.read
     else
       content = String.new # No content so we start with a base string.
     end
