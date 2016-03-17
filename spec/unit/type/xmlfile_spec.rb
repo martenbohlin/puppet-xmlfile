@@ -14,6 +14,14 @@ describe Puppet::Type.type(:xmlfile) do
           :path   => 'my/path',
       )}.to raise_error(Puppet::Error, /paths must be fully qualified/)
     end
+
+    it "should accept if fully-qualified" do
+      xmlfile = testobject.new(
+        :name   => 'foo',
+        :path   => '/my/path',
+      )
+      expect(xmlfile[:path]).to eq('/my/path')
+    end
   end 
   
   describe :ctime do
@@ -68,6 +76,70 @@ describe Puppet::Type.type(:xmlfile) do
          :path   => '/my/path',
          :source => 'modules/puppet/file',
       )}.to raise_error(Puppet::Error, /Cannot use relative URLs/)  
+    end
+
+    it "should not allow a source if content set" do
+      expect {
+        testobject.new(
+         :name    => 'foo',
+         :path    => '/my/path',
+         :source  => '/modules/puppet/file',
+         :content => '<somexml></somexml>',
+      )}.to raise_error(Puppet::Error, /Can specify either source or content but not both/)  
+    end
+  end
+
+  describe "generated content" do
+    context "with no :source or :content set" do
+      it "should be blank" do
+        catalog = Puppet::Resource::Catalog.new("host")
+
+        xmlfile = testobject.new(
+          :catalog => catalog,
+          :name   => 'foo',
+          :path   => '/my/path',
+        )
+        expect(xmlfile.should_content()).to eq('')
+      end
+    end
+
+    context "with :content set" do
+      it "should load in the file" do
+        catalog = Puppet::Resource::Catalog.new("host")
+
+        xmlfile = testobject.new(
+          :catalog => catalog,
+          :name   => 'foo',
+          :path   => '/my/path',
+          :content => '<xmlfile>testing</xmlfile>'
+        )
+        expect(xmlfile.should_content()).to eq('<xmlfile>testing</xmlfile>')
+      end
+    end
+
+    context "with :source set" do
+        let(:dummy_class) do
+          Class.new do
+
+            def content
+              "<file>from disk</file>"
+            end
+          end
+        end
+      it "should load in the file" do
+        catalog = Puppet::Resource::Catalog.new("host")
+        #Puppet::FileServing::Content.indirection.expects(:indirection).returns(true)
+        Puppet::FileServing::Content.indirection.expects(:find).returns(dummy_class.new)
+
+
+        xmlfile = testobject.new(
+          :catalog => catalog,
+          :name   => 'foo',
+          :path   => '/my/path',
+          :source => '/module/example.xml'
+        )
+        expect(xmlfile.should_content()).to eq('<file>from disk</file>')
+      end
     end
   end
 end
