@@ -128,7 +128,6 @@ describe Puppet::Type.type(:xmlfile) do
         end
       it "should load in the file" do
         catalog = Puppet::Resource::Catalog.new("host")
-        #Puppet::FileServing::Content.indirection.expects(:indirection).returns(true)
         Puppet::FileServing::Content.indirection.expects(:find).returns(dummy_class.new)
 
 
@@ -141,5 +140,48 @@ describe Puppet::Type.type(:xmlfile) do
         expect(xmlfile.should_content()).to eq('<file>from disk</file>')
       end
     end
+
+    context "with :use_existing_file set" do
+      let(:dummy_class) do
+        Class.new do
+
+          def read
+            "<file>Existing file</file>"
+          end
+        end
+      end
+
+      context "and file exists on disk" do
+        it "should load in the existing file" do
+          catalog = Puppet::Resource::Catalog.new("host")
+          File.expects(:exist?).returns(true)
+          File.expects(:open).returns(dummy_class.new)
+
+          xmlfile = testobject.new(
+            :catalog => catalog,
+            :name   => 'foo',
+            :path   => '/my/path',
+            :use_existing_file => true,
+          )
+          expect(xmlfile.should_content()).to eq('<file>Existing file</file>')
+        end
+      end
+
+      context "and file does NOT exist on disk" do
+        it "should default to a blank string" do
+          catalog = Puppet::Resource::Catalog.new("host")
+          File.expects(:exist?).returns(false)
+
+          xmlfile = testobject.new(
+            :catalog => catalog,
+            :name   => 'foo',
+            :path   => '/my/path',
+            :use_existing_file => true,
+          )
+          expect(xmlfile.should_content()).to eq('')
+        end
+      end
+    end
+
   end
 end
