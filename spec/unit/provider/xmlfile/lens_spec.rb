@@ -124,3 +124,59 @@ describe XmlLens do
     it "should create identical output to augeas"
   end
 end
+
+describe XmlLens do
+  let(:testobject) { XmlLens }
+
+  before(:each) do
+    xml = <<-EOP
+<?xml version='1.0'>
+<settings>
+
+  <setting>
+    <name>Authentication</name>
+    <value>true</value>
+  </setting>
+
+  <setting>
+    <name>Debugging</name>
+    <value>false</value>
+  </setting>
+
+  <options>
+    <option name="proc_count" value="4" />
+  </options>
+</settings>
+    EOP
+
+  end
+
+  describe :set do
+   it "simple xpath text" do
+     
+    @rexml = REXML::Document.new('<config><debugging>false</debugging></config>')
+    lens = testobject.new(
+      @rexml, ["set /config/debugging \"true\""]
+    )
+
+    out_xml = lens.evaluate
+    xml = ""
+    out_xml.write(xml)
+    expect(xml.to_s).to eq('<config><debugging>true</debugging></config>')
+   end
+
+   it "simple xpath attribute" do
+     
+    @rexml = REXML::Document.new('<config><debugging value="false"/></config>')
+    lens = testobject.new(
+      @rexml, ["set /config/debugging/#attribute/value \"true\""]
+    )
+
+    out_xml = lens.evaluate
+    xml = ""
+    out_xml.write(xml)
+    expect(xml.to_s).to eq('<config><debugging value=\'true\'/></config>')
+   end
+
+  end
+end

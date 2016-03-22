@@ -51,6 +51,17 @@ describe Puppet::Type.type(:xmlfile_modification) do
         )}.to raise_error(Puppet::Error, /Invalid syntax/)
       end
     end
+
+    describe "set" do
+      it "should allow valid syntax" do
+        mod = testobject.new(
+          :name   => "test",
+          :file   => "/my/path",
+          :changes => [ "set /blah/bloo/hah \"test\""],
+        )
+        expect(mod[:changes]).to eq([ "set /blah/bloo/hah \"test\""])
+      end
+    end
   end
   
   describe :onlyif do
@@ -89,6 +100,15 @@ describe Puppet::Type.type(:xmlfile_modification) do
             :file   => "/my/path",
             :onlyif => [ "match /blah/bloo/hah test"],
         )}.to raise_error(Puppet::Error, /Invalid syntax/)
+      end
+
+      it "should allow valid syntax" do
+        mod = testobject.new(
+          :name   => "test",
+          :file   => "/my/path",
+          :onlyif => [ "match /blah/bloo/hah size < 1"],
+        )
+        expect(mod[:onlyif]).to eq([ "match /blah/bloo/hah size < 1"])
       end
     end
   end
